@@ -1,0 +1,93 @@
+{
+    "melhor_modelo": "Random Forest",
+    "features_entrada": [
+        "SEX",
+        "EDUCATION",
+        "MARRIAGE",
+        "LIMIT_BAL",
+        "AGE",
+        "PAY_0",
+        "PAY_2",
+        "PAY_3",
+        "PAY_4",
+        "PAY_5",
+        "PAY_6",
+        "BILL_AMT1",
+        "BILL_AMT2",
+        "BILL_AMT3",
+        "BILL_AMT4",
+        "BILL_AMT5",
+        "BILL_AMT6",
+        "PAY_AMT1",
+        "PAY_AMT2",
+        "PAY_AMT3",
+        "PAY_AMT4",
+        "PAY_AMT5",
+        "PAY_AMT6",
+        "MAX_ATRASO_6M",
+        "QTD_MESES_ATRASO",
+        "TAXA_UTILIZACAO_LIMITE"
+    ],
+    "metricas": {
+        "Regressao Logistica": {
+            "Acuracia": 0.7445,
+            "Precisao": 0.4435,
+            "Recall": 0.6071,
+            "F1-Score": 0.5126,
+            "ROC-AUC": 0.7544,
+            "PR-AUC": 0.513,
+            "Gini": 0.5088,
+            "KS": 0.3981,
+            "confusion_matrix": [
+                [
+                    3657,
+                    1010
+                ],
+                [
+                    521,
+                    805
+                ]
+            ]
+        },
+        "Random Forest": {
+            "Acuracia": 0.7681,
+            "Precisao": 0.4806,
+            "Recall": 0.5973,
+            "F1-Score": 0.5326,
+            "ROC-AUC": 0.7754,
+            "PR-AUC": 0.553,
+            "Gini": 0.5508,
+            "KS": 0.4162,
+            "confusion_matrix": [
+                [
+                    3811,
+                    856
+                ],
+                [
+                    534,
+                    792
+                ]
+            ]
+        },
+        "XGBoost": {
+            "Acuracia": 0.7581,
+            "Precisao": 0.4653,
+            "Recall": 0.6275,
+            "F1-Score": 0.5344,
+            "ROC-AUC": 0.7754,
+            "PR-AUC": 0.5546,
+            "Gini": 0.5509,
+            "KS": 0.4251,
+            "confusion_matrix": [
+                [
+                    3711,
+                    956
+                ],
+                [
+                    494,
+                    832
+                ]
+            ]
+        }
+    }
+}

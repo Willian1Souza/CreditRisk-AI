@@ -1,0 +1,6 @@
+[tool.pyrefly]
+search-path = [
+    "CreditRisk-AI",
+    "."
+]
+python-interpreter-path = "CreditRisk-AI/.venv/Scripts/python.exe"
