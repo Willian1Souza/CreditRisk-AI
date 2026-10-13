@@ -1,0 +1,22 @@
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Configurações e segredos
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Arquivos temporários
+*.log
+.DS_Store
+
+# Dados sensíveis
+data/raw/
