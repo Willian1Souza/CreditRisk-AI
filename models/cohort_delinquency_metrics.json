@@ -1,0 +1,56 @@
+{
+  "objetivo": "Prever a contagem de operações com atraso de 90 dias no mês seguinte, normalizada pelo número de operações conhecido na data da previsão.",
+  "corte_temporal": "2024-12-31",
+  "linhas_treino": 5988,
+  "linhas_teste": 8936,
+  "datas_alvo_treino": [
+    "2024-11-30",
+    "2024-12-31"
+  ],
+  "datas_alvo_teste": [
+    "2025-01-31",
+    "2025-02-28",
+    "2025-03-31"
+  ],
+  "metricas_modelo": {
+    "MAE_ponderado": 0.0024824863062160854,
+    "RMSE_ponderado": 0.009380982442181338,
+    "R2_ponderado": 0.8762628484513398,
+    "MAE_por_segmento": 0.0045948603107332855
+  },
+  "metricas_baseline_mes_anterior": {
+    "MAE_ponderado": 0.0017526308527287308,
+    "RMSE_ponderado": 0.005865994117435776,
+    "R2_ponderado": 0.951617677246696,
+    "MAE_por_segmento": 0.002079389407206394
+  },
+  "modelo_supera_baseline_mae_ponderado": false,
+  "artefato_aprovado_para_uso": false,
+  "features": [
+    "Tipo_de_Cliente",
+    "Modalidade",
+    "Faixa_de_Prazo_da_Operacao",
+    "Qtd_Atraso_30_dias",
+    "Volume_Atraso_30_dias",
+    "Qtd_Atraso_60_dias",
+    "Volume_Atraso_60_dias",
+    "Qtd_Atraso_90_dias",
+    "Volume_Atraso_90_dias",
+    "Qtd_Prejuizo_Acumulado",
+    "Volume_Prejuizo_Acumulado",
+    "Qtd_Operacoes_Excluidas_Atraso_90_E_H_Acumulado",
+    "Volume_Operacoes_Excluidas_Atraso_90_E_H_Acumulado",
+    "Qtd_Operacoes_Coorte",
+    "Valor_Operacoes_Coorte",
+    "idade_coorte_meses",
+    "mes_acompanhamento"
+  ],
+  "fontes_coorte": [
+    "Inadimplencia_Coorte_2024_4o_trimestre.xlsx",
+    "Inadimplencia_Coorte_2025_1o_trimestre.xlsx"
+  ],
+  "fontes_contextuais_nao_integradas": {
+    "202609_Tabelas_de_estatisticas_monetarias_e_de_credito.xlsx": "Indicadores macroeconômicos agregados não foram unidos às coortes: há somente dois meses-alvo no treino, insuficientes para avaliar com segurança o efeito temporal desses indicadores."
+  },
+  "observacao": "Modelo agregado de carteira; não é compatível com a API de risco individual de cartão de crédito."
+}

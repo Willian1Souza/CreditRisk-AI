@@ -289,3 +289,184 @@ class BatchPrevisaoResponse(BaseModel):
     total_solicitados: int
     resumo: ResumoLoteResponse
     previsoes: list[ItemLoteResponse]
+
+
+class FinanciamentoInput(BaseModel):
+    """
+    Schema de entrada para análise e simulação de aprovação de financiamento.
+    Permite que o analista insira valor a ser financiado, emprego, salário, idade,
+    possível valor de entrada ou nulo, estado civil e comprovante de residência.
+    """
+    valor_financiado: float = Field(
+        ...,
+        gt=0,
+        description="Valor total do bem ou crédito a ser financiado",
+        examples=[85000.0]
+    )
+    salario: float = Field(
+        ...,
+        gt=0,
+        description="Salário / renda mensal comprovada do proponente",
+        examples=[6500.0]
+    )
+    idade: int = Field(
+        ...,
+        ge=18,
+        le=100,
+        description="Idade do proponente em anos",
+        examples=[32]
+    )
+    tipo_emprego: str = Field(
+        ...,
+        description="Ocupação / vínculo de trabalho (CLT, Servidor Público, Autônomo, Aposentado/Pensionista, Empresário/PJ, Desempregado)",
+        examples=["CLT"]
+    )
+    estado_civil: str = Field(
+        ...,
+        description="Estado civil do solicitante (Casado, Solteiro, Divorciado, Viúvo, União Estável)",
+        examples=["Casado"]
+    )
+    comprovante_residencia: bool = Field(
+        ...,
+        description="Status do comprovante de residência (True = entregue e válido, False = pendente ou não entregue)",
+        examples=[True]
+    )
+    valor_entrada: Optional[float] = Field(
+        None,
+        ge=0,
+        description="Possível valor de entrada (pode ser nulo ou zero para financiamento integral 100%)",
+        examples=[15000.0]
+    )
+    tempo_emprego_meses: Optional[int] = Field(
+        12,
+        ge=0,
+        description="Tempo no emprego atual em meses",
+        examples=[24]
+    )
+    prazo_meses: Optional[int] = Field(
+        48,
+        ge=6,
+        le=420,
+        description="Prazo de parcelamento em meses (padrão: 48)",
+        examples=[48]
+    )
+    taxa_juros_anual: Optional[float] = Field(
+        14.5,
+        ge=0.0,
+        description="Taxa de juros anual nominal (% a.a.)",
+        examples=[14.5]
+    )
+    sistema_amortizacao: Optional[str] = Field(
+        "PRICE",
+        description="Sistema de amortização: PRICE (parcelas fixas) ou SAC",
+        examples=["PRICE"]
+    )
+    tipo_financiamento: Optional[str] = Field(
+        "Veículo",
+        description="Finalidade ou modalidade do financiamento (Veículo, Imóvel, Crédito Pessoal)",
+        examples=["Veículo"]
+    )
+    nome_cliente: Optional[str] = Field(
+        "Cliente Analisado",
+        description="Nome completo do proponente",
+        examples=["Ana Beatriz Silva"]
+    )
+    cpf_cliente: Optional[str] = Field(
+        "000.000.000-00",
+        description="CPF ou documento do cliente",
+        examples=["123.456.789-00"]
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalizar_payload(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "dados" in values and isinstance(values["dados"], dict):
+            return values["dados"]
+        return values
+
+    @model_validator(mode="after")
+    def validar_regras_financiamento(self) -> "FinanciamentoInput":
+        entrada = self.valor_entrada or 0.0
+        if entrada >= self.valor_financiado:
+            raise ValueError(
+                f"O valor de entrada (R$ {entrada:,.2f}) deve ser menor que o valor total "
+                f"do bem (R$ {self.valor_financiado:,.2f})."
+            )
+        return self
+
+
+class ClienteFinanciamentoResponse(BaseModel):
+    nome: str
+    cpf: str
+    idade: int
+    estado_civil: str
+    tipo_emprego: str
+    tempo_emprego_meses: int
+    salario_mensal: float
+    comprovante_residencia: bool
+
+
+class DadosFinanciamentoResponse(BaseModel):
+    tipo_financiamento: str
+    valor_total_bem: float
+    valor_entrada: float
+    percentual_entrada: float
+    saldo_financiado: float
+    ltv_percentual: float
+    prazo_meses: int
+    taxa_juros_anual: float
+    taxa_juros_mensal_pct: float
+    sistema_amortizacao: str
+    valor_parcela: float
+    total_a_pagar: float
+    total_juros: float
+
+
+class CapacidadePagamentoResponse(BaseModel):
+    salario_mensal: float
+    valor_parcela: float
+    comprometimento_renda_pct: float
+    margem_maxima_30pct: float
+    margem_tolerancia_35pct: float
+    margem_disponivel: float
+    idade_final_financiamento: float
+
+
+class ScoreIaFinanciamentoResponse(BaseModel):
+    modelo: str
+    score_inadimplencia: float
+    probabilidade_inadimplencia: str
+    faixa_risco: str
+
+
+class ResultadoDecisaoFinanciamentoResponse(BaseModel):
+    aprovado: bool
+    status_decisao: str
+    parecer_resumo: str
+    pontos_positivos: list[str]
+    condicoes_aprovacao: list[str]
+    motivos_reprovacao: list[str]
+
+
+class ChecklistItemResponse(BaseModel):
+    status: str
+    descricao: str
+    critico: bool
+
+
+class ViabilizacaoCreditoResponse(BaseModel):
+    entrada_minima_para_aprovar: Optional[float] = None
+    percentual_entrada_minima: Optional[float] = None
+    prazo_sugerido_meses: Optional[int] = None
+    salario_minimo_necessario: Optional[float] = None
+
+
+class AnaliseFinanciamentoResponse(BaseModel):
+    cliente: ClienteFinanciamentoResponse
+    financiamento: DadosFinanciamentoResponse
+    capacidade_pagamento: CapacidadePagamentoResponse
+    inteligencia_artificial: ScoreIaFinanciamentoResponse
+    resultado_decisao: ResultadoDecisaoFinanciamentoResponse
+    checklist_politica_credito: dict[str, ChecklistItemResponse]
+    viabilizacao_credito: ViabilizacaoCreditoResponse
+

@@ -4,5 +4,6 @@
   "python.analysis.extraPaths": [
     "${workspaceFolder}/CreditRisk-AI"
   ],
-  "python.pyrefly.configPath": "${workspaceFolder}/pyrefly.toml"
+  "python.pyrefly.configPath": "${workspaceFolder}/pyrefly.toml",
+  "python.analysis.diagnosticsSource": "Pylance + Pyrefly"
 }

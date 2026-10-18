@@ -20,3 +20,7 @@ __pycache__/
 
 # Dados sensíveis
 data/raw/
+
+# Front-end
+Front-end/node_modules/
+Front-end/dist/

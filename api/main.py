@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # Garante que a raiz do projeto esteja disponível para resolução de módulos
@@ -12,6 +13,7 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 from src.predict import CreditRiskPredictor
+from src.financiamento import AnalisadorFinanciamento
 from api.schemas import (
     ClienteInput,
     BatchClientesRequest,
@@ -21,6 +23,8 @@ from api.schemas import (
     BatchPrevisaoResponse,
     ItemLoteResponse,
     ResumoLoteResponse,
+    FinanciamentoInput,
+    AnaliseFinanciamentoResponse,
     MAPEAMENTO_SEXO,
     MAPEAMENTO_ESCOLARIDADE,
     MAPEAMENTO_ESTADO_CIVIL
@@ -35,8 +39,19 @@ Valida rigorosamente códigos categóricos e atributos derivados comportamentais
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
 # Inicializa o preditor (carrega modelo joblib e metadados)
 predictor = CreditRiskPredictor()
+analisador_financiamento = AnalisadorFinanciamento(predictor=predictor)
 
 
 @app.exception_handler(RequestValidationError)
@@ -208,6 +223,61 @@ def predict_batch(lote: BatchClientesRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao processar lote: {str(erro)}"
+        )
+
+
+@app.post(
+    "/financiamento/analisar",
+    response_model=AnaliseFinanciamentoResponse,
+    tags=["Financiamento"],
+    summary="Análise e Simulação de Aprovação de Financiamento"
+)
+@app.post(
+    "/analisar-financiamento",
+    response_model=AnaliseFinanciamentoResponse,
+    tags=["Financiamento"],
+    include_in_schema=False
+)
+def analisar_financiamento_endpoint(proposta: FinanciamentoInput):
+    """
+    Avalia a proposta de financiamento inserida pelo analista:
+    - Valor do bem e saldo a financiar
+    - Possível valor de entrada ou nulo/zero (100% financiado)
+    - Emprego e estabilidade profissional
+    - Salário e comprometimento de renda (DTI <= 30%)
+    - Idade e término da operação (< 75/80 anos)
+    - Estado civil
+    - Comprovante de residência (documento obrigatório)
+    - Score preditivo de IA e probabilidade de inadimplência
+    - Retorna se seria APROVADO, CONDICIONAL ou REPROVADO com plano de viabilização.
+    """
+    try:
+        resultado = analisador_financiamento.avaliar_financiamento(
+            valor_financiado=proposta.valor_financiado,
+            salario=proposta.salario,
+            idade=proposta.idade,
+            tipo_emprego=proposta.tipo_emprego,
+            estado_civil=proposta.estado_civil,
+            comprovante_residencia=proposta.comprovante_residencia,
+            valor_entrada=proposta.valor_entrada,
+            tempo_emprego_meses=proposta.tempo_emprego_meses or 12,
+            prazo_meses=proposta.prazo_meses or 48,
+            taxa_juros_anual=proposta.taxa_juros_anual if proposta.taxa_juros_anual is not None else 14.5,
+            sistema_amortizacao=proposta.sistema_amortizacao or "PRICE",
+            tipo_financiamento=proposta.tipo_financiamento or "Veículo",
+            nome_cliente=proposta.nome_cliente or "Cliente Analisado",
+            cpf_cliente=proposta.cpf_cliente or "000.000.000-00",
+        )
+        return resultado
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(erro)
+        )
+    except Exception as erro:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao analisar financiamento: {str(erro)}"
         )
 
 

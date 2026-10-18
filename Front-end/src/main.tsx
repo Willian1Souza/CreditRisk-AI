@@ -1,0 +1,15 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import CreditRiskForm from "./app";
+
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Elemento raiz da interface não encontrado.");
+}
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <CreditRiskForm />
+  </StrictMode>,
+);
