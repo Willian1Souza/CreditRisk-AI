@@ -45,6 +45,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:5173",
         "https://willian1souza.github.io",
+        "https://creditrisk-ai.vercel.app",
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
