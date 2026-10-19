@@ -10,7 +10,7 @@ import {
   HelpCircle,
   MoreHorizontal,
   Search,
-  Bell,
+
   Plus,
   Download,
   Shield,
@@ -26,18 +26,18 @@ import {
   AlertCircle,
   RotateCcw,
   Calculator,
-  Landmark,
+  
   Check,
-  DollarSign,
+  
   Wallet,
   Gauge,
   Clock,
-  Building2,
+  
   Percent,
   Trash2,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const PAYMENT_FEATURES = ["PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6"] as const;
 const BILL_FEATURES = Array.from({ length: 6 }, (_, i) => `BILL_AMT${i + 1}`);
@@ -355,17 +355,28 @@ export default function CreditRiskApp() {
   // Checa status da API ao montar
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`${API_URL}/health`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("API indisponível"))))
-      .then((data: { status?: string; modelo?: string }) => {
-        if (data.status === "online") {
-          setApiOnline(true);
-          if (data.modelo) setModelName(data.modelo);
+    async function carregarStatusApi() {
+      try {
+        const [healthResponse, modelResponse] = await Promise.all([
+          fetch(`${API_URL}/health`, { signal: controller.signal }),
+          fetch(`${API_URL}/model/info`, { signal: controller.signal }),
+        ]);
+        if (!healthResponse.ok || !modelResponse.ok) {
+          throw new Error("API indisponível");
         }
-      })
-      .catch(() => {
-        setApiOnline(false);
-      });
+
+        const health = (await healthResponse.json()) as { status?: string };
+        const dados = (await modelResponse.json()) as { modelo?: string };
+        if (health.status === "online") {
+          setApiOnline(true);
+          if (dados.modelo) setModelName(dados.modelo);
+        }
+      } catch {
+        if (!controller.signal.aborted) setApiOnline(false);
+      }
+    }
+
+    void carregarStatusApi();
 
     return () => controller.abort();
   }, []);
