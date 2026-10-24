@@ -19,11 +19,11 @@ from api.schemas import FinanciamentoInput
 
 
 def test_calculos_financeiros_basicos():
-    # Taxa anual de 14.5% -> mensal ~1.134%
+    # Taxa anual nominal de 14.5% -> mensal ~1.208%
     i = calcular_taxa_mensal(14.5)
-    assert 0.011 < i < 0.012
+    assert abs(i - (0.145 / 12)) < 1e-12
 
-    # Parcela de 80.000 em 48 meses a ~1.134% a.m.
+    # Parcela de 80.000 em 48 meses a ~1.208% a.m.
     pmt = calcular_parcela_price(80000, i, 48)
     assert 2100 < pmt < 2300
 
@@ -131,6 +131,7 @@ def test_api_endpoint_financiamento():
     assert "financiamento" in dados
     assert "capacidade_pagamento" in dados
     assert dados["financiamento"]["saldo_financiado"] == 60000.0
+    assert dados["financiamento"]["taxa_juros_mensal_pct"] == 1.208
     assert dados["resultado_decisao"]["status_decisao"] in ("Aprovado", "Aprovado com Condições")
 
 

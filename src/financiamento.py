@@ -24,8 +24,8 @@ from src.predict import CreditRiskPredictor
 
 
 def calcular_taxa_mensal(taxa_anual_pct: float) -> float:
-    """Converte taxa de juros anual para taxa mensal equivalente."""
-    return ((1.0 + (taxa_anual_pct / 100.0)) ** (1.0 / 12.0)) - 1.0
+    """Converte taxa anual nominal em percentual para a taxa mensal."""
+    return (taxa_anual_pct / 100.0) / 12.0
 
 
 def calcular_parcela_price(saldo_devedor: float, taxa_mensal: float, prazo_meses: int) -> float:
