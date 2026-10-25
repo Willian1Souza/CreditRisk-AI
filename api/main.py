@@ -25,6 +25,10 @@ from api.schemas import (
     ResumoLoteResponse,
     FinanciamentoInput,
     AnaliseFinanciamentoResponse,
+    AnaliseCompletaRequest,
+    AnaliseCompletaResponse,
+    SimuladorCenariosRequest,
+    SimuladorCenariosResponse,
     MAPEAMENTO_SEXO,
     MAPEAMENTO_ESCOLARIDADE,
     MAPEAMENTO_ESTADO_CIVIL
@@ -136,7 +140,8 @@ def formatar_resultado(pred_dict: dict[str, Any], cliente_dict: dict[str, Any]) 
             MAX_ATRASO_6M=cliente_dict["MAX_ATRASO_6M"],
             QTD_MESES_ATRASO=cliente_dict["QTD_MESES_ATRASO"],
             TAXA_UTILIZACAO_LIMITE=cliente_dict["TAXA_UTILIZACAO_LIMITE"]
-        )
+        ),
+        score_credito=predictor.calcular_score_credito(score)
     )
 
 
@@ -200,7 +205,8 @@ def predict_batch(lote: BatchClientesRequest):
                         MAX_ATRASO_6M=dados["MAX_ATRASO_6M"],
                         QTD_MESES_ATRASO=dados["QTD_MESES_ATRASO"],
                         TAXA_UTILIZACAO_LIMITE=dados["TAXA_UTILIZACAO_LIMITE"]
-                    )
+                    ),
+                    score_credito=predictor.calcular_score_credito(score)
                 )
             )
 
@@ -226,6 +232,65 @@ def predict_batch(lote: BatchClientesRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro interno ao processar lote: {str(erro)}"
+        )
+
+
+@app.post(
+    "/analyze",
+    response_model=AnaliseCompletaResponse,
+    tags=["Análise"],
+    summary="Análise completa de risco, diagnóstico e explicabilidade"
+)
+def analyze(request: AnaliseCompletaRequest):
+    """Retorna previsão, score de 0 a 1000, diagnóstico e fatores SHAP do cliente."""
+    try:
+        dados_cliente = request.cliente.to_features_dict()
+        resultado = predictor.prever(dados_cliente)
+        return AnaliseCompletaResponse(
+            previsao=formatar_resultado(resultado, dados_cliente),
+            score_credito=predictor.calcular_score_credito(resultado["score_modelo"]),
+            diagnostico_financeiro=predictor.gerar_diagnostico_financeiro(
+                dados_cliente, request.renda_mensal
+            ),
+            explicabilidade_shap=predictor.explicar_predicao_shap(dados_cliente),
+        )
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(erro)
+        )
+    except Exception as erro:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao processar análise: {str(erro)}"
+        )
+
+
+@app.post(
+    "/scenarios/compare",
+    response_model=SimuladorCenariosResponse,
+    tags=["Análise"],
+    summary="Compara a previsão entre dois cenários financeiros"
+)
+def compare_scenarios(request: SimuladorCenariosRequest):
+    """Compara a probabilidade, score e diagnóstico do perfil original e do cenário editado."""
+    try:
+        resultado = predictor.simular_cenarios(
+            cenario_base=request.cenario_base.to_features_dict(),
+            cenario_simulado=request.cenario_simulado.to_features_dict(),
+            renda_base=request.renda_base,
+            renda_simulada=request.renda_simulada,
+        )
+        return SimuladorCenariosResponse(**resultado)
+    except ValueError as erro:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(erro)
+        )
+    except Exception as erro:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erro interno ao comparar cenários: {str(erro)}"
         )
 
 

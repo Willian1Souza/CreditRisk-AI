@@ -57,13 +57,13 @@ class ClienteInput(BaseModel):
         examples=[35]
     )
 
-    # Histórico de Status de Pagamento (-2 = sem uso, -1 = pago em dia, 0 = rotativo, 1..9 = meses de atraso)
-    PAY_0: int = Field(..., ge=-2, le=9, description="Status de pagamento em Setembro", examples=[2])
-    PAY_2: int = Field(..., ge=-2, le=9, description="Status de pagamento em Agosto", examples=[1])
-    PAY_3: int = Field(..., ge=-2, le=9, description="Status de pagamento em Julho", examples=[0])
-    PAY_4: int = Field(..., ge=-2, le=9, description="Status de pagamento em Junho", examples=[0])
-    PAY_5: int = Field(..., ge=-2, le=9, description="Status de pagamento em Maio", examples=[0])
-    PAY_6: int = Field(..., ge=-2, le=9, description="Status de pagamento em Abril", examples=[0])
+    # PAY_* representa situação/atraso da fatura; PAY_AMT* abaixo representa valor pago.
+    PAY_0: int = Field(..., ge=-2, le=9, description="Situação da fatura em Setembro: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[2])
+    PAY_2: int = Field(..., ge=-2, le=9, description="Situação da fatura em Agosto: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[1])
+    PAY_3: int = Field(..., ge=-2, le=9, description="Situação da fatura em Julho: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[0])
+    PAY_4: int = Field(..., ge=-2, le=9, description="Situação da fatura em Junho: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[0])
+    PAY_5: int = Field(..., ge=-2, le=9, description="Situação da fatura em Maio: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[0])
+    PAY_6: int = Field(..., ge=-2, le=9, description="Situação da fatura em Abril: -2 sem uso, -1 paga em dia, 0 saldo rotativo, 1 a 9 meses de atraso", examples=[0])
 
     # Valores das Faturas (podem ser negativos representando saldo credor)
     BILL_AMT1: float = Field(..., description="Valor da fatura em Setembro", examples=[30000.0])
@@ -73,13 +73,13 @@ class ClienteInput(BaseModel):
     BILL_AMT5: float = Field(..., description="Valor da fatura em Maio", examples=[20000.0])
     BILL_AMT6: float = Field(..., description="Valor da fatura em Abril", examples=[18000.0])
 
-    # Pagamentos Efetuados (devem ser não-negativos)
-    PAY_AMT1: float = Field(..., ge=0, description="Pagamento realizado em Setembro", examples=[2000.0])
-    PAY_AMT2: float = Field(..., ge=0, description="Pagamento realizado em Agosto", examples=[3000.0])
-    PAY_AMT3: float = Field(..., ge=0, description="Pagamento realizado em Julho", examples=[2500.0])
-    PAY_AMT4: float = Field(..., ge=0, description="Pagamento realizado em Junho", examples=[2000.0])
-    PAY_AMT5: float = Field(..., ge=0, description="Pagamento realizado em Maio", examples=[1500.0])
-    PAY_AMT6: float = Field(..., ge=0, description="Pagamento realizado em Abril", examples=[1000.0])
+    # Valores em moeda efetivamente pagos (não são códigos de atraso).
+    PAY_AMT1: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Setembro (não é código de atraso)", examples=[2000.0])
+    PAY_AMT2: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Agosto (não é código de atraso)", examples=[3000.0])
+    PAY_AMT3: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Julho (não é código de atraso)", examples=[2500.0])
+    PAY_AMT4: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Junho (não é código de atraso)", examples=[2000.0])
+    PAY_AMT5: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Maio (não é código de atraso)", examples=[1500.0])
+    PAY_AMT6: float = Field(..., ge=0, description="Valor em dinheiro efetivamente pago em Abril (não é código de atraso)", examples=[1000.0])
 
     # Atributos Derivados (Opcionais: se enviados são validados contra as colunas base; se omitidos são calculados)
     MAX_ATRASO_6M: Optional[int] = Field(
@@ -260,6 +260,17 @@ class AtributosDerivadosResponse(BaseModel):
     TAXA_UTILIZACAO_LIMITE: float
 
 
+class ScoreCreditoResponse(BaseModel):
+    score: int
+    faixa: str
+    rating: str
+    cor: str
+    nivel_risco: str
+    descricao: str
+    probabilidade_inadimplencia: str
+    percentual_seguranca: str
+
+
 class PrevisaoResponse(BaseModel):
     modelo: str
     score_modelo: float
@@ -267,6 +278,7 @@ class PrevisaoResponse(BaseModel):
     decisao: str
     probabilidade_inadimplencia: str
     atributos_derivados: AtributosDerivadosResponse
+    score_credito: Optional[ScoreCreditoResponse] = None
 
 
 class ItemLoteResponse(BaseModel):
@@ -277,6 +289,7 @@ class ItemLoteResponse(BaseModel):
     decisao: str
     probabilidade_inadimplencia: str
     atributos_derivados: AtributosDerivadosResponse
+    score_credito: ScoreCreditoResponse
 
 
 class ResumoLoteResponse(BaseModel):
@@ -332,47 +345,47 @@ class FinanciamentoInput(BaseModel):
         examples=[True]
     )
     valor_entrada: Optional[float] = Field(
-        None,
+        default=None,
         ge=0,
         description="Possível valor de entrada (pode ser nulo ou zero para financiamento integral 100%)",
         examples=[15000.0]
     )
     tempo_emprego_meses: Optional[int] = Field(
-        12,
+        default=12,
         ge=0,
         description="Tempo no emprego atual em meses",
         examples=[24]
     )
     prazo_meses: Optional[int] = Field(
-        48,
+        default=48,
         ge=6,
         le=420,
         description="Prazo de parcelamento em meses (padrão: 48)",
         examples=[48]
     )
     taxa_juros_anual: Optional[float] = Field(
-        14.5,
+        default=14.5,
         ge=0.0,
         description="Taxa de juros anual nominal (% a.a.)",
         examples=[14.5]
     )
     sistema_amortizacao: Optional[str] = Field(
-        "PRICE",
+        default="PRICE",
         description="Sistema de amortização: PRICE (parcelas fixas) ou SAC",
         examples=["PRICE"]
     )
     tipo_financiamento: Optional[str] = Field(
-        "Veículo",
+        default="Veículo",
         description="Finalidade ou modalidade do financiamento (Veículo, Imóvel, Crédito Pessoal)",
         examples=["Veículo"]
     )
     nome_cliente: Optional[str] = Field(
-        "Cliente Analisado",
+        default="Cliente Analisado",
         description="Nome completo do proponente",
         examples=["Ana Beatriz Silva"]
     )
     cpf_cliente: Optional[str] = Field(
-        "000.000.000-00",
+        default="000.000.000-00",
         description="CPF ou documento do cliente",
         examples=["123.456.789-00"]
     )
@@ -470,3 +483,69 @@ class AnaliseFinanciamentoResponse(BaseModel):
     checklist_politica_credito: dict[str, ChecklistItemResponse]
     viabilizacao_credito: ViabilizacaoCreditoResponse
 
+
+class FatorSHAP(BaseModel):
+    feature_codigo: str
+    nome: str
+    descricao: str
+    impacto: float
+    direcao: str
+    tipo: str
+    impacto_score_pontos: int
+
+
+class ExplicabilidadeSHAPResponse(BaseModel):
+    valor_base_modelo: float
+    score_base_modelo: int
+    top_fatores_risco: list[FatorSHAP]
+    top_fatores_protecao: list[FatorSHAP]
+    todos_fatores: list[FatorSHAP]
+
+
+class AnaliseCompletaRequest(BaseModel):
+    cliente: ClienteInput
+    renda_mensal: Optional[float] = Field(default=None, gt=0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalizar_payload(cls, values: Any) -> Any:
+        if isinstance(values, dict) and "cliente" not in values and "LIMIT_BAL" in values:
+            return {"cliente": values, "renda_mensal": values.get("renda_mensal")}
+        return values
+
+
+class AnaliseCompletaResponse(BaseModel):
+    previsao: PrevisaoResponse
+    score_credito: ScoreCreditoResponse
+    diagnostico_financeiro: dict[str, Any]
+    explicabilidade_shap: ExplicabilidadeSHAPResponse
+
+
+class SimuladorCenariosRequest(BaseModel):
+    cenario_base: ClienteInput
+    cenario_simulado: ClienteInput
+    renda_base: Optional[float] = Field(default=None, gt=0)
+    renda_simulada: Optional[float] = Field(default=None, gt=0)
+
+
+class ComparativoCenarios(BaseModel):
+    delta_score: int
+    delta_probabilidade_pct: float
+    delta_utilizacao_pct: float
+    impacto_geral: str
+    resumo: str
+    mudou_rating: bool
+    rating_anterior: str
+    rating_novo: str
+
+
+class CenarioSimuladoResultado(BaseModel):
+    previsao: dict[str, Any]
+    score_credito: ScoreCreditoResponse
+    diagnostico: dict[str, Any]
+
+
+class SimuladorCenariosResponse(BaseModel):
+    cenario_base: CenarioSimuladoResultado
+    cenario_simulado: CenarioSimuladoResultado
+    comparativo: ComparativoCenarios

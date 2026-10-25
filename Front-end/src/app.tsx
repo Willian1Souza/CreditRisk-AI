@@ -1,4 +1,6 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import CreditAnalysis from "./CreditAnalysis";
+import { cleanNumberInput } from "./numberInput";
 
 const formatBRL = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -55,19 +57,25 @@ export default function CreditRiskApp() {
   const [monthlyRate, setMonthlyRate] = useState(2.35);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [calcType, setCalcType] = useState<"rate" | "installment" | "amount">("rate");
-  const [calcAmount, setCalcAmount] = useState(25000);
-  const [calcDownPayment, setCalcDownPayment] = useState(5000);
-  const [calcMonths, setCalcMonths] = useState(24);
-  const [calcRate, setCalcRate] = useState(2.35);
-  const [calcInstallment, setCalcInstallment] = useState(1100);
+  const [calcAmount, setCalcAmount] = useState<number | string>(25000);
+  const [calcDownPayment, setCalcDownPayment] = useState<number | string>(5000);
+  const [calcMonths, setCalcMonths] = useState<number | string>(24);
+  const [calcRate, setCalcRate] = useState<number | string>(2.35);
+  const [calcInstallment, setCalcInstallment] = useState<number | string>(1100);
 
-  const principalAmount = Math.max(calcAmount - calcDownPayment, 0);
-  const calculatedRate = calculateRateFromPayment(principalAmount, calcMonths, calcInstallment);
-  const calculatedInstallment = calculateInstallment(principalAmount, calcMonths, calcRate / 100);
-  const calculatedAmount = calculateAmountFromRateAndPayment(calcMonths, calcRate / 100, calcInstallment);
-  const displayRate = calcType === "rate" ? calculatedRate : calcRate;
-  const displayInstallment = calcType === "installment" ? calculatedInstallment : calcInstallment;
-  const displayAmount = calcType === "amount" ? calculatedAmount : calcAmount;
+  const numAmount = typeof calcAmount === "number" ? calcAmount : (parseFloat(String(calcAmount)) || 0);
+  const numDownPayment = typeof calcDownPayment === "number" ? calcDownPayment : (parseFloat(String(calcDownPayment)) || 0);
+  const numMonths = typeof calcMonths === "number" ? calcMonths : (parseInt(String(calcMonths), 10) || 0);
+  const numRate = typeof calcRate === "number" ? calcRate : (parseFloat(String(calcRate)) || 0);
+  const numInstallment = typeof calcInstallment === "number" ? calcInstallment : (parseFloat(String(calcInstallment)) || 0);
+
+  const principalAmount = Math.max(numAmount - numDownPayment, 0);
+  const calculatedRate = calculateRateFromPayment(principalAmount, numMonths || 1, numInstallment);
+  const calculatedInstallment = calculateInstallment(principalAmount, numMonths || 1, numRate / 100);
+  const calculatedAmount = calculateAmountFromRateAndPayment(numMonths || 1, numRate / 100, numInstallment);
+  const displayRate = calcType === "rate" ? calculatedRate : numRate;
+  const displayInstallment = calcType === "installment" ? calculatedInstallment : numInstallment;
+  const displayAmount = calcType === "amount" ? (calculatedAmount > 0 ? calculatedAmount.toFixed(2) : "") : calcAmount;
 
   const installmentValue = useMemo(() => {
     return calculateInstallment(amount, months, monthlyRate / 100);
@@ -78,7 +86,7 @@ export default function CreditRiskApp() {
   const interestCost = totalInstallments - amount;
   const rate = displayRate;
   const annualRate = rate * 12;
-  const totalPaid = displayInstallment * calcMonths;
+  const totalPaid = displayInstallment * (numMonths || 0);
 
   return (
     <div className="bg-brand-bg text-brand-textDark font-sans antialiased selection:bg-brand-accent selection:text-brand-dark min-h-screen flex flex-col justify-between">
@@ -136,13 +144,15 @@ export default function CreditRiskApp() {
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
           <a href="#calculadora-juros" className="hover:text-brand-dark transition-colors">Calculadora de juros</a>
+          <a href="#analise-risco" className="hover:text-brand-dark transition-colors">Análise de risco</a>
           <a href="#sobre-estimativa" className="hover:text-brand-dark transition-colors">Sobre a estimativa</a>
           <a href="#simulador-principal" className="bg-brand-dark hover:bg-brand-darkHover text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-sm">
             Simular
           </a>
         </nav>
 
-        <div className="md:hidden">
+        <div className="flex items-center gap-3 md:hidden">
+          <a href="#analise-risco" className="text-xs font-semibold text-brand-dark">Análise</a>
           <a href="#simulador-principal" className="bg-brand-dark text-white px-4 py-2 rounded-full text-xs font-semibold">Simular</a>
         </div>
       </header>
@@ -152,11 +162,11 @@ export default function CreditRiskApp() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-5 space-y-6 pt-4">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-gray-200 text-xs font-medium text-gray-700 shadow-sm">
-                <span>🔒</span> Sem cadastro · sem login · sem rastro
+                <span>🔒</span> Sem cadastro · sem login · sem identificadores
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-brand-dark leading-[1.1] tracking-tight">
-                Simule o custo do crédito <span className="italic text-emerald-800 font-serif">sem entregar seus dados.</span>
+                Simule o custo no navegador e, se quiser, <span className="italic text-emerald-800 font-serif">analise seu perfil de crédito.</span>
               </h1>
 
               <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
@@ -166,7 +176,7 @@ export default function CreditRiskApp() {
               <ul className="space-y-3 pt-2 text-sm sm:text-base text-gray-700 font-medium">
                 <li className="flex items-center gap-3">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                  Zero campos pessoais: nada de nome, CPF ou e-mail
+                  Sem identificadores diretos: não pedimos nome, CPF ou e-mail
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
@@ -174,7 +184,7 @@ export default function CreditRiskApp() {
                 </li>
                 <li className="flex items-center gap-3">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-                  Resultado em tempo real, sem esperar
+                  Simulação de parcelas calculada no navegador
                 </li>
               </ul>
             </div>
@@ -290,6 +300,8 @@ export default function CreditRiskApp() {
           </div>
         </section>
 
+        <CreditAnalysis />
+
         <section id="sobre-estimativa" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-gray-100">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
@@ -352,8 +364,18 @@ export default function CreditRiskApp() {
                       <button
                         key={option.value}
                         type="button"
-                        className={`calc-tab px-4 py-2 rounded-full text-xs sm:text-sm font-semibold ${calcType === option.value ? "bg-brand-dark text-white shadow-sm" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                        onClick={() => setCalcType(option.value as "rate" | "installment" | "amount")}
+                        className={`calc-tab px-4 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${calcType === option.value ? "bg-brand-dark text-white shadow-sm" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                        onClick={() => {
+                          const newType = option.value as "rate" | "installment" | "amount";
+                          if (calcType === "rate" && calculatedRate > 0) {
+                            setCalcRate(Number(calculatedRate.toFixed(2)));
+                          } else if (calcType === "installment" && calculatedInstallment > 0) {
+                            setCalcInstallment(Number(calculatedInstallment.toFixed(2)));
+                          } else if (calcType === "amount" && calculatedAmount > 0) {
+                            setCalcAmount(Number(calculatedAmount.toFixed(2)));
+                          }
+                          setCalcType(newType);
+                        }}
                       >
                         {option.label}
                       </button>
@@ -366,11 +388,14 @@ export default function CreditRiskApp() {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Valor financiado</label>
                     <div className="relative">
                       <input
-                        type="number"
-                        value={Number(displayAmount.toFixed(2))}
-                        onChange={(event) => setCalcAmount(Number(event.target.value) || 0)}
+                        type="text"
+                        inputMode="decimal"
+                        value={displayAmount}
+                        onChange={(event) => setCalcAmount(cleanNumberInput(event.target.value, true))}
+                        onFocus={(event) => event.target.select()}
+                        placeholder="0"
                         readOnly={calcType === "amount"}
-                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark ${calcType === "amount" ? "bg-gray-100 text-gray-500" : ""}`}
+                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark transition-all ${calcType === "amount" ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                       />
                       <span className="absolute right-3 top-3 text-sm text-gray-400 font-medium">R$</span>
                     </div>
@@ -380,10 +405,13 @@ export default function CreditRiskApp() {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Valor de entrada</label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="decimal"
                         value={calcDownPayment}
-                        onChange={(event) => setCalcDownPayment(Number(event.target.value) || 0)}
-                        className="w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark"
+                        onChange={(event) => setCalcDownPayment(cleanNumberInput(event.target.value, true))}
+                        onFocus={(event) => event.target.select()}
+                        placeholder="0"
+                        className="w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark transition-all"
                       />
                       <span className="absolute right-3 top-3 text-sm text-gray-400 font-medium">R$</span>
                     </div>
@@ -393,10 +421,13 @@ export default function CreditRiskApp() {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Número de meses</label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         value={calcMonths}
-                        onChange={(event) => setCalcMonths(Math.max(1, Number(event.target.value) || 1))}
-                        className="w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark"
+                        onChange={(event) => setCalcMonths(cleanNumberInput(event.target.value, false))}
+                        onFocus={(event) => event.target.select()}
+                        placeholder="0"
+                        className="w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark transition-all"
                       />
                       <span className="absolute right-3 top-3 text-sm text-gray-400 font-medium">meses</span>
                     </div>
@@ -406,12 +437,14 @@ export default function CreditRiskApp() {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Taxa de juros mensal</label>
                     <div className="relative">
                       <input
-                        type="number"
-                        step="0.01"
-                        value={Number(displayRate.toFixed(2))}
-                        onChange={(event) => setCalcRate(Number(event.target.value) || 0)}
+                        type="text"
+                        inputMode="decimal"
+                        value={calcType === "rate" ? (calculatedRate > 0 ? calculatedRate.toFixed(2) : "") : calcRate}
+                        onChange={(event) => setCalcRate(cleanNumberInput(event.target.value, true))}
+                        onFocus={(event) => event.target.select()}
+                        placeholder="0.00"
                         readOnly={calcType === "rate"}
-                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark ${calcType === "rate" ? "bg-gray-100 text-gray-500" : ""}`}
+                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark transition-all ${calcType === "rate" ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                       />
                       <span className="absolute right-3 top-2 text-xs text-gray-400 text-right leading-none">%<br /><span className="text-[9px]">a.m.</span></span>
                     </div>
@@ -421,11 +454,14 @@ export default function CreditRiskApp() {
                     <label className="block text-xs font-semibold text-gray-700 mb-1">Valor da prestação</label>
                     <div className="relative">
                       <input
-                        type="number"
-                        value={Number(displayInstallment.toFixed(2))}
-                        onChange={(event) => setCalcInstallment(Number(event.target.value) || 0)}
+                        type="text"
+                        inputMode="decimal"
+                        value={calcType === "installment" ? (calculatedInstallment > 0 ? calculatedInstallment.toFixed(2) : "") : calcInstallment}
+                        onChange={(event) => setCalcInstallment(cleanNumberInput(event.target.value, true))}
+                        onFocus={(event) => event.target.select()}
+                        placeholder="0.00"
                         readOnly={calcType === "installment"}
-                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark ${calcType === "installment" ? "bg-gray-100 text-gray-500" : ""}`}
+                        className={`w-full bg-[#F9F8F3] border border-gray-200 rounded-xl py-3 px-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-dark transition-all ${calcType === "installment" ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
                       />
                       <span className="absolute right-3 top-3 text-sm text-gray-400 font-medium">R$</span>
                     </div>
@@ -475,10 +511,10 @@ export default function CreditRiskApp() {
 
           <div className="space-y-4 border-t border-gray-200/80 pt-4">
             {[
-              { question: "Vocês guardam alguma informação?", answer: "Nenhuma. Todos os cálculos ocorrem localmente no código JavaScript executado direto no seu próprio navegador. Não enviamos dados para servidores externos." },
-              { question: "Isso afeta meu score?", answer: "Não afeta de forma alguma. Como não pedimos CPF nem fazemos consultas aos birôs de crédito, nenhuma busca é registrada." },
+              { question: "Vocês guardam alguma informação?", answer: "A calculadora de parcelas funciona no navegador. Se você optar pela análise de risco, os dados de perfil e financeiros informados são enviados à API configurada para processamento; não informe nome, CPF nem outros identificadores diretos." },
+              { question: "Isso afeta meu score?", answer: "Não consultamos birôs de crédito. O score de 0 a 1000 exibido na análise é uma estimativa gerada pelo modelo deste projeto e não altera sua pontuação em serviços externos." },
               { question: "O resultado é uma aprovação?", answer: "Não. Este é um simulador com fins educativos e estimativos. A aprovação real depende das políticas internas e análises específicas de cada instituição financeira." },
-              { question: "Como interpretar o comprometimento da renda?", answer: "Compare a parcela estimada com sua renda e considere também outras dívidas e despesas. Cada instituição adota critérios próprios; este simulador não calcula chance de aprovação." },
+              { question: "Como interpretar o comprometimento da renda?", answer: "A análise pessoal compara a fatura informada com a renda mensal informada. Compare também outras dívidas e despesas; este diagnóstico não calcula chance de aprovação." },
             ].map((item, index) => (
               <div key={item.question} className="border-b border-gray-200/80 pb-4">
                 <button
@@ -502,7 +538,7 @@ export default function CreditRiskApp() {
           <div className="bg-brand-dark rounded-3xl p-8 sm:p-14 text-center text-white space-y-6">
             <h2 className="text-3xl sm:text-5xl font-serif font-bold">Teste quantas vezes quiser.</h2>
             <p className="text-emerald-100/80 text-sm sm:text-base max-w-xl mx-auto">
-              Ninguém está olhando. Nada fica gravado.
+              A calculadora de parcelas roda no navegador. A análise de risco envia os dados informados à API para processamento.
             </p>
             <div>
               <a href="#simulador-principal" className="inline-block bg-brand-accent hover:bg-emerald-300 text-brand-dark font-semibold px-8 py-3.5 rounded-full text-sm sm:text-base transition-all shadow-md">
@@ -518,7 +554,7 @@ export default function CreditRiskApp() {
       </main>
 
       <footer className="border-t border-gray-200 mt-12 py-6 text-center text-xs text-gray-500">
-        <p>© 2026 SimulaLivre. Simulador financeiro estático e privativo.</p>
+        <p>© 2026 SimulaLivre. Simulação educativa de crédito.</p>
       </footer>
     </div>
   );

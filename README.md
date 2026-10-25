@@ -7,6 +7,7 @@ Aplicação de análise de risco de crédito com interface web, API REST em Fast
 ## Funcionalidades
 
 - Análise individual e em lote de risco de inadimplência em cartão de crédito.
+- Score de risco derivado da probabilidade do modelo, diagnóstico financeiro pessoal, comparação de cenários e explicabilidade com SHAP.
 - Cálculo e validação automática de atributos derivados do histórico de pagamentos.
 - Simulação de financiamento com tabelas Price e SAC, capacidade de pagamento, regras de crédito e cenários de viabilização.
 - Interface web em React e Vite.
@@ -76,6 +77,8 @@ Com essa execução separada, a interface espera a API em `http://127.0.0.1:8000
 | `GET` | `/model/info` | Features, categorias, regras dos atributos derivados e métricas |
 | `POST` | `/predict` | Predição de risco para um cliente |
 | `POST` | `/predict/batch` | Predições para uma lista de clientes |
+| `POST` | `/analyze` | Predição, score de 0 a 1000, diagnóstico financeiro e fatores SHAP |
+| `POST` | `/scenarios/compare` | Comparação de score, probabilidade e diagnóstico entre dois perfis |
 | `POST` | `/financiamento/analisar` | Análise e simulação de uma proposta de financiamento |
 
 O Swagger mostra os schemas e permite testar cada rota em `/docs`.
@@ -116,6 +119,14 @@ Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" `
 ```
 
 O resultado contém a classe (`0` = baixo risco; `1` = alto risco), o score/probabilidade estimada e os atributos derivados. As categorias aceitas e as regras completas estão em `/model/info`.
+
+O score de 0 a 1000 é calculado diretamente como `(1 - probabilidade prevista de inadimplência) × 1000`; não é um score de birô de crédito nem uma garantia de aprovação. O diagnóstico compara faturas, pagamentos, utilização do limite e, quando informada, renda mensal. A explicabilidade SHAP descreve contribuições do modelo e não implica causalidade.
+
+`/analyze` recebe `{ "cliente": { ...dados do cliente... }, "renda_mensal": 4500 }`. `/scenarios/compare` recebe `cenario_base`, `cenario_simulado` e, opcionalmente, `renda_base` e `renda_simulada`. Ambos os cenários usam o mesmo formato de 23 atributos brutos aceito por `/predict`; os três atributos derivados são calculados automaticamente.
+
+No histórico, `PAY_0` e `PAY_2` a `PAY_6` são códigos de situação da fatura/atraso (`-2` sem uso, `-1` paga em dia, `0` saldo rotativo e `1` a `9` meses de atraso). Já `PAY_AMT1` a `PAY_AMT6` são valores em dinheiro efetivamente pagos em cada mês. Os nomes e valores permitidos também aparecem ao lado dos campos da interface.
+
+Na interface, a calculadora de parcelas continua sendo executada no navegador. Ao solicitar análise de risco ou comparação, os valores financeiros e códigos informados são enviados à API configurada (`VITE_API_URL`) para processamento. Não envie nome, CPF ou outros identificadores pessoais.
 
 Para a análise de financiamento, envie os campos obrigatórios `valor_financiado`, `salario`, `idade`, `tipo_emprego`, `estado_civil` e `comprovante_residencia`. Os demais campos, como entrada, prazo, taxa e sistema de amortização, são opcionais e têm valores padrão descritos no Swagger.
 
